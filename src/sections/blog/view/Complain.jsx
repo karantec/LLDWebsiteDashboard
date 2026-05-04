@@ -29,7 +29,6 @@ import {
   Radio,
   CircularProgress,
 } from "@mui/material";
-// No external icon library needed — using inline emoji icons
 
 const API_BASE_URL = "https://my-project-backend-ee4t.onrender.com/api/complaint";
 
@@ -50,6 +49,9 @@ const theme = {
   pendingBg: "#FFF3E0",
   pendingText: "#E65100",
   pendingBorder: "#FFCC02",
+  inReviewBg: "#E3F2FD",
+  inReviewText: "#1565C0",
+  inReviewBorder: "#90CAF9",
   resolvedBg: "#E8F5E9",
   resolvedText: "#2E7D32",
   resolvedBorder: "#81C784",
@@ -57,8 +59,10 @@ const theme = {
   rejectedText: "#C62828",
   rejectedBorder: "#EF9A9A",
   // priority
-  highBg: "#FFEBEE",
-  highText: "#C62828",
+  urgentBg: "#FFEBEE",
+  urgentText: "#C62828",
+  highBg: "#FFE0B2",
+  highText: "#E65100",
   mediumBg: "#FFF8E1",
   mediumText: "#F57F17",
   lowBg: "#E8F5E9",
@@ -106,6 +110,8 @@ const statusStyle = (status) => {
   switch (status) {
     case "Pending":
       return { bgcolor: theme.pendingBg, color: theme.pendingText, borderColor: theme.pendingBorder };
+    case "In Review":
+      return { bgcolor: theme.inReviewBg, color: theme.inReviewText, borderColor: theme.inReviewBorder };
     case "Resolved":
       return { bgcolor: theme.resolvedBg, color: theme.resolvedText, borderColor: theme.resolvedBorder };
     case "Rejected":
@@ -118,6 +124,8 @@ const statusStyle = (status) => {
 // ─── Priority chip styles ─────────────────────────────────────────
 const priorityStyle = (priority) => {
   switch (priority) {
+    case "Urgent":
+      return { bgcolor: theme.urgentBg, color: theme.urgentText };
     case "High":
       return { bgcolor: theme.highBg, color: theme.highText };
     case "Medium":
@@ -132,10 +140,22 @@ const priorityStyle = (priority) => {
 // ─── Priority bar color ───────────────────────────────────────────
 const priorityBarColor = (priority) => {
   switch (priority) {
+    case "Urgent": return theme.urgentText;
     case "High": return theme.highText;
     case "Medium": return theme.mediumText;
     case "Low": return theme.lowText;
     default: return theme.primary;
+  }
+};
+
+// ─── Priority display helper ──────────────────────────────────────
+const getPriorityIcon = (priority) => {
+  switch (priority) {
+    case "Urgent": return "🔴";
+    case "High": return "🟠";
+    case "Medium": return "🟡";
+    case "Low": return "🟢";
+    default: return "⚪";
   }
 };
 
@@ -194,7 +214,7 @@ const FilterBtn = ({ label, active, onClick, color }) => (
   </Button>
 );
 
-// ─── Status Update Dialog Component (without MUI icon) ───────────────
+// ─── Status Update Dialog Component ───────────────────────────────
 const StatusUpdateDialog = ({ open, complaint, onClose, onUpdate, loading }) => {
   const [selectedStatus, setSelectedStatus] = useState("Resolved");
   const [resolution, setResolution] = useState("");
@@ -352,7 +372,7 @@ export default function ComplaintView() {
       });
       setStatusUpdateOpen(false);
       setSelectedForUpdate(null);
-      await fetchComplaints(); // Refresh the list
+      await fetchComplaints();
     } catch (err) {
       setSnackbar({
         open: true,
@@ -369,6 +389,7 @@ export default function ComplaintView() {
   // ── Derived stats ──
   const total = complaints.length;
   const pending = complaints.filter((c) => c.status === "Pending").length;
+  const inReview = complaints.filter((c) => c.status === "In Review").length;
   const resolved = complaints.filter((c) => c.status === "Resolved").length;
 
   // ── Filtered list ──
@@ -381,7 +402,9 @@ export default function ComplaintView() {
       (c.title || "").toLowerCase().includes(q) ||
       (c.description || "").toLowerCase().includes(q) ||
       (c.complainantName || "").toLowerCase().includes(q) ||
-      (c.category || "").toLowerCase().includes(q);
+      (c.category || "").toLowerCase().includes(q) ||
+      (c.orderId || "").toLowerCase().includes(q) ||
+      (c.productName || "").toLowerCase().includes(q);
     return matchStatus && matchPriority && matchSearch;
   });
 
@@ -427,6 +450,7 @@ export default function ComplaintView() {
               {[
                 { label: "Total", val: total, color: "#fff" },
                 { label: "Pending", val: pending, color: "#FFD54F" },
+                { label: "In Review", val: inReview, color: "#90CAF9" },
                 { label: "Resolved", val: resolved, color: "#A5D6A7" },
               ].map((s) => (
                 <Box
@@ -441,10 +465,10 @@ export default function ComplaintView() {
                     minWidth: 72,
                   }}
                 >
-                  <Typography sx={{ fontFamily: "'Georgia', serif", fontSize: "1.8rem", fontWeight: 700, color: s.color, lineHeight: 1 }}>
+                  <Typography sx={{ fontFamily: "'Georgia', serif", fontSize: "1.5rem", fontWeight: 700, color: s.color, lineHeight: 1 }}>
                     {loading ? "—" : s.val}
                   </Typography>
-                  <Typography sx={{ fontSize: "0.68rem", color: "rgba(255,255,255,0.7)", textTransform: "uppercase", letterSpacing: "0.8px", mt: 0.5 }}>
+                  <Typography sx={{ fontSize: "0.65rem", color: "rgba(255,255,255,0.7)", textTransform: "uppercase", letterSpacing: "0.8px", mt: 0.5 }}>
                     {s.label}
                   </Typography>
                 </Box>
@@ -471,19 +495,21 @@ export default function ComplaintView() {
         >
           <FilterBtn label="All" active={activeStatus === "all"} onClick={() => setActiveStatus("all")} />
           <FilterBtn label="Pending" active={activeStatus === "Pending"} onClick={() => setActiveStatus("Pending")} color={theme.pendingText} />
+          <FilterBtn label="In Review" active={activeStatus === "In Review"} onClick={() => setActiveStatus("In Review")} color={theme.inReviewText} />
           <FilterBtn label="Resolved" active={activeStatus === "Resolved"} onClick={() => setActiveStatus("Resolved")} color={theme.resolvedText} />
           <FilterBtn label="Rejected" active={activeStatus === "Rejected"} onClick={() => setActiveStatus("Rejected")} color={theme.rejectedText} />
 
           <Box sx={{ width: 1, height: 24, bgcolor: theme.border, display: { xs: "none", sm: "block" } }} />
 
-          <FilterBtn label="🔴 High" active={activePriority === "High"} onClick={() => setActivePriority(activePriority === "High" ? "all" : "High")} color={theme.highText} />
-          <FilterBtn label="🟠 Medium" active={activePriority === "Medium"} onClick={() => setActivePriority(activePriority === "Medium" ? "all" : "Medium")} color={theme.mediumText} />
+          <FilterBtn label="🔴 Urgent" active={activePriority === "Urgent"} onClick={() => setActivePriority(activePriority === "Urgent" ? "all" : "Urgent")} color={theme.urgentText} />
+          <FilterBtn label="🟠 High" active={activePriority === "High"} onClick={() => setActivePriority(activePriority === "High" ? "all" : "High")} color={theme.highText} />
+          <FilterBtn label="🟡 Medium" active={activePriority === "Medium"} onClick={() => setActivePriority(activePriority === "Medium" ? "all" : "Medium")} color={theme.mediumText} />
           <FilterBtn label="🟢 Low" active={activePriority === "Low"} onClick={() => setActivePriority(activePriority === "Low" ? "all" : "Low")} color={theme.lowText} />
 
           <Box sx={{ flex: 1, minWidth: 180 }}>
             <TextField
               size="small"
-              placeholder="Search complaints…"
+              placeholder="Search by title, name, order ID, product..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               InputProps={{
@@ -612,6 +638,26 @@ export default function ComplaintView() {
                         {c.description || "No description provided."}
                       </Typography>
 
+                      {/* Order ID & Product Info (new fields) */}
+                      {(c.orderId || c.productName) && (
+                        <Stack direction="row" gap={0.8} mb={1.5} flexWrap="wrap">
+                          {c.orderId && (
+                            <Chip
+                              label={`Order: ${c.orderId}`}
+                              size="small"
+                              sx={{ bgcolor: theme.primaryBg, color: theme.primary, fontWeight: 500, fontSize: "0.68rem", height: 20 }}
+                            />
+                          )}
+                          {c.productName && (
+                            <Chip
+                              label={`Product: ${c.productName}`}
+                              size="small"
+                              sx={{ bgcolor: theme.primaryBg, color: theme.primary, fontWeight: 500, fontSize: "0.68rem", height: 20 }}
+                            />
+                          )}
+                        </Stack>
+                      )}
+
                       {/* Tags */}
                       <Stack direction="row" gap={0.8} mb={2} flexWrap="wrap">
                         <Chip
@@ -620,7 +666,7 @@ export default function ComplaintView() {
                           sx={{ bgcolor: theme.primaryBg, color: theme.primary, fontWeight: 600, fontSize: "0.68rem", height: 20, border: `1px solid ${theme.primaryBgDeep}` }}
                         />
                         <Chip
-                          label={`▲ ${c.priority}`}
+                          label={`${getPriorityIcon(c.priority)} ${c.priority}`}
                           size="small"
                           sx={{ ...priorityStyle(c.priority), fontWeight: 700, fontSize: "0.68rem", height: 20 }}
                         />
@@ -663,8 +709,8 @@ export default function ComplaintView() {
                         </Typography>
                       </Stack>
 
-                      {/* Update Status Button - Only show for pending complaints */}
-                      {c.status === "Pending" && (
+                      {/* Update Status Button - Only show for pending or in review complaints */}
+                      {(c.status === "Pending" || c.status === "In Review") && (
                         <Button
                           fullWidth
                           variant="outlined"
@@ -723,11 +769,11 @@ export default function ComplaintView() {
                   </Typography>
                   <Stack direction="row" gap={1} flexWrap="wrap">
                     <Chip label={selected.status} size="small" sx={{ ...statusStyle(selected.status), fontWeight: 700, fontSize: "0.65rem", height: 22, border: "1px solid" }} />
-                    <Chip label={`▲ ${selected.priority}`} size="small" sx={{ ...priorityStyle(selected.priority), fontWeight: 700, fontSize: "0.65rem", height: 22 }} />
+                    <Chip label={`${getPriorityIcon(selected.priority)} ${selected.priority}`} size="small" sx={{ ...priorityStyle(selected.priority), fontWeight: 700, fontSize: "0.65rem", height: 22 }} />
                     <Chip label={selected.category} size="small" sx={{ bgcolor: "rgba(255,255,255,0.2)", color: "#fff", fontWeight: 600, fontSize: "0.65rem", height: 22 }} />
                   </Stack>
                 </Box>
-                {selected.status === "Pending" && (
+                {(selected.status === "Pending" || selected.status === "In Review") && (
                   <Button
                     variant="contained"
                     onClick={() => {
@@ -759,6 +805,18 @@ export default function ComplaintView() {
               </Box>
 
               <Divider sx={{ borderColor: theme.border, mb: 3 }} />
+
+              {/* Order & Product Details (new section) */}
+              {(selected.orderId || selected.productName) && (
+                <>
+                  <Typography sx={{ fontFamily: "'Georgia', serif", fontSize: "0.95rem", fontWeight: 700, color: theme.textPrimary, mb: 2 }}>
+                    Order Information
+                  </Typography>
+                  {selected.orderId && <DetailRow icon="📦" label="Order ID" value={selected.orderId} />}
+                  {selected.productName && <DetailRow icon="🏷️" label="Product Name" value={selected.productName} />}
+                  <Divider sx={{ borderColor: theme.border, mb: 3 }} />
+                </>
+              )}
 
               {/* Complainant details */}
               <Typography sx={{ fontFamily: "'Georgia', serif", fontSize: "0.95rem", fontWeight: 700, color: theme.textPrimary, mb: 2 }}>
