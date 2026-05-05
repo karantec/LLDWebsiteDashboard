@@ -33,45 +33,69 @@ const wholesalerApi = {
       },
       body: JSON.stringify(data),
     });
+
     if (!res.ok) {
       const errorData = await res.json();
       throw new Error(errorData.message || `HTTP error! status: ${res.status}`);
     }
+
     return res.json();
   },
 
   getAll: async () => {
     const res = await fetch(API_BASE_URL);
+
     if (!res.ok) {
       throw new Error(`HTTP error! status: ${res.status}`);
     }
+
     const data = await res.json();
     return data.data || data;
   },
 
+  // ✅ FIXED UPDATE (USING ADMIN TOKEN)
   update: async (id, data) => {
+    // Get admin token from localStorage (not wholesaler token)
+    const token = localStorage.getItem("adminToken") || localStorage.getItem("token");
+    
+    console.log("Update - Token being sent:", token ? "Token exists" : "No token found");
+
     const res = await fetch(`${API_BASE_URL}/${id}`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify(data),
     });
+
     if (!res.ok) {
       const errorData = await res.json();
       throw new Error(errorData.message || `HTTP error! status: ${res.status}`);
     }
+
     return res.json();
   },
 
+  // ✅ FIXED DELETE (USING ADMIN TOKEN)
   delete: async (id) => {
+    // Get admin token from localStorage (not wholesaler token)
+    const token = localStorage.getItem("adminToken") || localStorage.getItem("token");
+    
+    console.log("Delete - Token being sent:", token ? "Token exists" : "No token found");
+
     const res = await fetch(`${API_BASE_URL}/${id}`, {
       method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
     });
+
     if (!res.ok) {
       const errorData = await res.json();
       throw new Error(errorData.message || `HTTP error! status: ${res.status}`);
     }
+
     return res.json();
   },
 };
@@ -100,6 +124,16 @@ export default function WholesalerRegistration() {
   const [loading, setLoading] = useState(false);
   const [showPin, setShowPin] = useState(false);
   const [showPinInList, setShowPinInList] = useState({});
+  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
+
+  // 🔥 Check if admin is authenticated on component mount
+  useEffect(() => {
+    const adminToken = localStorage.getItem("adminToken") || localStorage.getItem("token");
+    if (adminToken) {
+      setIsAdminAuthenticated(true);
+    }
+    fetchWholesalers();
+  }, []);
 
   // 🔥 Fetch Wholesalers
   const fetchWholesalers = async () => {
@@ -114,10 +148,6 @@ export default function WholesalerRegistration() {
       setLoading(false);
     }
   };
-
-  useEffect(() => {
-    fetchWholesalers();
-  }, []);
 
   const showSnackbar = (message, severity = "success") => {
     setSnackbar({ open: true, message, severity });
@@ -160,6 +190,7 @@ export default function WholesalerRegistration() {
         setForm(defaultForm);
         fetchWholesalers();
         
+        // Store wholesaler token for wholesaler login (not for admin operations)
         localStorage.setItem("wholesalerToken", res.token);
         localStorage.setItem("wholesalerInfo", JSON.stringify(res.wholesaler));
       } else {
@@ -188,6 +219,13 @@ export default function WholesalerRegistration() {
       return showSnackbar("Please enter a valid email address", "error");
     }
 
+    // Check if admin token exists before attempting update
+    const adminToken = localStorage.getItem("adminToken") || localStorage.getItem("token");
+    if (!adminToken) {
+      showSnackbar("Admin not authenticated. Please login again.", "error");
+      return;
+    }
+
     setLoading(true);
     try {
       const res = await wholesalerApi.update(editingId, editForm);
@@ -212,6 +250,13 @@ export default function WholesalerRegistration() {
   // 🔥 DELETE WHOLESALER
   const handleDelete = async (id, storeName) => {
     if (window.confirm(`Are you sure you want to delete "${storeName}"?`)) {
+      // Check if admin token exists before attempting delete
+      const adminToken = localStorage.getItem("adminToken") || localStorage.getItem("token");
+      if (!adminToken) {
+        showSnackbar("Admin not authenticated. Please login again.", "error");
+        return;
+      }
+
       setLoading(true);
       try {
         const res = await wholesalerApi.delete(id);
@@ -256,9 +301,17 @@ export default function WholesalerRegistration() {
     }));
   };
 
+  // Optional: Add admin logout button
+  const handleAdminLogout = () => {
+    localStorage.removeItem("adminToken");
+    localStorage.removeItem("token");
+    setIsAdminAuthenticated(false);
+    showSnackbar("Admin logged out successfully", "info");
+  };
+
   return (
     <Container maxWidth="lg">
-      {/* HEADER */}
+      {/* HEADER with Admin Status */}
       <Stack direction="row" justifyContent="space-between" alignItems="center" mb={4} flexWrap="wrap" gap={2}>
         <Box>
           <Typography variant="h4" gutterBottom fontWeight="bold">
@@ -268,14 +321,24 @@ export default function WholesalerRegistration() {
             Join our B2B network and grow your business
           </Typography>
         </Box>
-        <Button 
-          variant="contained" 
-          onClick={() => setOpen(true)} 
-          disabled={loading}
-          size="large"
-        >
-          Register New Wholesaler
-        </Button>
+        <Stack direction="row" spacing={2} alignItems="center">
+          {isAdminAuthenticated && (
+            <Chip 
+              label="Admin Mode" 
+              color="primary" 
+              size="medium"
+              onDelete={handleAdminLogout}
+            />
+          )}
+          <Button 
+            variant="contained" 
+            onClick={() => setOpen(true)} 
+            disabled={loading}
+            size="large"
+          >
+            Register New Wholesaler
+          </Button>
+        </Stack>
       </Stack>
 
       {/* STATS CARD */}
@@ -338,6 +401,7 @@ export default function WholesalerRegistration() {
                           color="primary"
                           onClick={() => openEditDialog(w)}
                           sx={{ minWidth: "35px", p: "4px 8px" }}
+                          disabled={!isAdminAuthenticated}
                         >
                           ✏️
                         </Button>
@@ -347,6 +411,7 @@ export default function WholesalerRegistration() {
                           color="error"
                           onClick={() => handleDelete(w._id, w.storeName)}
                           sx={{ minWidth: "35px", p: "4px 8px" }}
+                          disabled={!isAdminAuthenticated}
                         >
                           🗑️
                         </Button>
