@@ -29,6 +29,9 @@ const getDummyOrders = () => [
 const getAdminToken = () =>
   localStorage.getItem("adminToken") || localStorage.getItem("admin_token") || null;
 
+/* ─── API BASE URL ───────────────────────────────────────── */
+const API_BASE_URL = "https://my-project-backend-ee4t.onrender.com/api/order";
+
 /* ─── STATUS CONFIG ──────────────────────────────────────── */
 const STATUS_CONFIG = {
   PLACED:    { bg: "#FFF8E1", color: "#F59E0B", border: "#FDE68A", dot: "#F59E0B" },
@@ -122,7 +125,7 @@ export default function OrdersPage() {
   const [toast, setToast] = useState(null);
   const [updatingTracking, setUpdatingTracking] = useState(false);
 
-  /* FETCH ORDERS */
+  /* FETCH ORDERS - GET /admin/all */
   useEffect(() => {
     const fetchOrders = async () => {
       try {
@@ -134,8 +137,8 @@ export default function OrdersPage() {
           throw new Error("No authentication token");
         }
 
-        const res = await axios.get("https://my-project-backend-ee4t.onrender.com/api/order/admin/all", {
-          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        const res = await axios.get(`${API_BASE_URL}/admin/all`, {
+          headers: { Authorization: `Bearer ${token}` },
           timeout: 10000,
         });
 
@@ -177,6 +180,7 @@ export default function OrdersPage() {
     setTimeout(() => setToast(null), 2800);
   };
 
+  /* UPDATE STATUS - PATCH /admin/:id/status */
   const handleStatusUpdate = async (id, status) => {
     if (usingDummyData) {
       setOrders(prev => prev.map(o => o._id === id ? { ...o, status } : o));
@@ -185,19 +189,23 @@ export default function OrdersPage() {
     }
     try {
       const token = getAdminToken();
-      await axios.put(
-        `https://my-project-backend-ee4t.onrender.com/api/order/admin/${id}/status`,
+      await axios.patch(
+        `${API_BASE_URL}/admin/${id}/status`,
         { status },
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setOrders(prev => prev.map(o => o._id === id ? { ...o, status } : o));
+      if (selectedOrder && selectedOrder._id === id) {
+        setSelectedOrder(prev => ({ ...prev, status }));
+      }
       showToast(`Status updated to ${status}`);
     } catch (error) {
       console.error("Status update failed:", error);
-      showToast("Status update failed", true);
+      showToast(error.response?.data?.message || "Status update failed", true);
     }
   };
 
+  /* ADD TRACKING - POST /admin/:id/tracking */
   const handleAddTracking = async () => {
     if (!trackingStatus.trim() || !trackingLocation.trim()) {
       showToast("Please enter both status and location", true);
@@ -228,7 +236,7 @@ export default function OrdersPage() {
     try {
       const token = getAdminToken();
       const res = await axios.post(
-        `https://my-project-backend-ee4t.onrender.com/api/order/admin/${selectedOrder._id}/tracking`,
+        `${API_BASE_URL}/admin/${selectedOrder._id}/tracking`,
         { status: trackingStatus.trim(), location: trackingLocation.trim() },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -260,6 +268,7 @@ export default function OrdersPage() {
     }
   };
 
+  /* REMOVE TRACKING - Client-side only (backend doesn't have explicit delete endpoint) */
   const handleRemoveTracking = async (index) => {
     if (!selectedOrder.trackingUpdates || selectedOrder.trackingUpdates.length === 0) return;
     
@@ -273,15 +282,12 @@ export default function OrdersPage() {
       return;
     }
     
-    try {
-      const updatedOrder = { ...selectedOrder, trackingUpdates: updatedTrackingUpdates };
-      setSelectedOrder(updatedOrder);
-      setOrders(prev => prev.map(o => o._id === updatedOrder._id ? updatedOrder : o));
-      showToast("Tracking update removed");
-    } catch (error) {
-      console.error("Failed to remove tracking:", error);
-      showToast("Failed to remove tracking update", true);
-    }
+    // Note: Backend doesn't have a DELETE endpoint for tracking updates
+    // This is a client-side only removal
+    const updatedOrder = { ...selectedOrder, trackingUpdates: updatedTrackingUpdates };
+    setSelectedOrder(updatedOrder);
+    setOrders(prev => prev.map(o => o._id === updatedOrder._id ? updatedOrder : o));
+    showToast("Tracking update removed (client-side only)");
   };
 
   const filtered = orders.filter(o => {
