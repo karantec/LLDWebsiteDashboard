@@ -1,245 +1,608 @@
-/* eslint-disable perfectionist/sort-named-imports */
-/* eslint-disable react/prop-types */
 /* eslint-disable */
-import axios from "axios";
-import { Formik, Form } from "formik";
 import React, { useState, useEffect } from "react";
 import {
-  Box,
-  Button,
-  Card,
-  CardContent,
-  CircularProgress,
-  Grid,
-  Snackbar,
-  Typography,
-  Chip,
+  Box, Button, Card, CardContent, Chip, CircularProgress,
+  Divider, Grid, IconButton, Snackbar, Switch, TextField,
+  Tooltip, Typography,
 } from "@mui/material";
-import { getBanner, createBanner } from "src/services/BannerService";
 
-const CLOUDINARY_UPLOAD_PRESET = "market_data";
-const CLOUDINARY_CLOUD_NAME = "drq4o4qix";
+// ── Import from your service file ─────────────────────────────
+import {
+  getAllCourses,
+  getCourseById,
+  createCourse,
+  updateCourse,
+  deleteCourse,
+  addSession,
+  updateSession,
+  deleteSession,
+} from "../services/BannerService"; // ← adjust path if needed
 
-const redButtonStyle = {
-  bgcolor: "#dc2626",
-  color: "white",
-  "&:hover": { bgcolor: "#b91c1c" },
+// ── Styles ────────────────────────────────────────────────────
+const S = {
+  primary:   "#dc2626",
+  primaryHv: "#b91c1c",
+  bg:        "#f8fafc",
+  card:      "#ffffff",
+  border:    "#e2e8f0",
+  text:      "#0f172a",
+  muted:     "#64748b",
 };
 
-// ----------------------------------------------------------
-// ✅ Upload Area Component
-// ----------------------------------------------------------
-export const UploadArea = ({
-  title,
-  subtitle,
-  onUpload,
-  hasImage,
-  imageUrl,
-  isEmpty = true,
-  isUploading,
-}) => (
-  <Card
-    sx={{
-      height: "100%",
-      border: "2px dashed #e5e7eb",
-      backgroundColor: "#ffffff",
-      boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-    }}
-  >
-    <CardContent
-      sx={{ height: "100%", display: "flex", flexDirection: "column", position: "relative" }}
-    >
-      {/* Header */}
-      <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2 }}>
-        <Box>
-          <Typography variant="subtitle1" fontWeight="600">
-            {title}
+const btn = (variant = "primary") => ({
+  bgcolor:      variant === "primary" ? S.primary : variant === "danger" ? "#fee2e2" : "#f1f5f9",
+  color:        variant === "primary" ? "#fff"    : variant === "danger" ? S.primary : S.text,
+  fontWeight:   600,
+  borderRadius: "8px",
+  textTransform: "none",
+  px: 2.5,
+  py: 1,
+  "&:hover": {
+    bgcolor: variant === "primary" ? S.primaryHv : variant === "danger" ? "#fecaca" : "#e2e8f0",
+  },
+});
+
+const inputSx = {
+  "& .MuiOutlinedInput-root": {
+    borderRadius: "8px",
+    fontSize: 14,
+    "& fieldset": { borderColor: S.border },
+    "&:hover fieldset": { borderColor: "#94a3b8" },
+    "&.Mui-focused fieldset": { borderColor: S.primary },
+  },
+  "& .MuiInputLabel-root.Mui-focused": { color: S.primary },
+};
+
+// ── Empty session template ─────────────────────────────────────
+const emptySession = () => ({
+  sessionNumber: "",
+  title:         "",
+  subtitle:      "",
+  resources:     [{ label: "📹 Video", url: "" }, { label: "📋 Doc", url: "" }],
+});
+
+// ─────────────────────────────────────────────────────────────
+// SESSION FORM (add / edit)
+// ─────────────────────────────────────────────────────────────
+function SessionForm({ initial, onSave, onCancel, saving }) {
+  const [form, setForm] = useState(initial || emptySession());
+
+  const setField = (k, v) => setForm(p => ({ ...p, [k]: v }));
+
+  const setResource = (i, k, v) =>
+    setForm(p => {
+      const r = [...p.resources];
+      r[i] = { ...r[i], [k]: v };
+      return { ...p, resources: r };
+    });
+
+  const addResource    = () => setForm(p => ({ ...p, resources: [...p.resources, { label: "", url: "" }] }));
+  const removeResource = (i) => setForm(p => ({ ...p, resources: p.resources.filter((_, idx) => idx !== i) }));
+
+  return (
+    <Box>
+      <Grid container spacing={2}>
+        <Grid item xs={12} sm={3}>
+          <TextField
+            label="Session Number"
+            type="number"
+            fullWidth
+            size="small"
+            value={form.sessionNumber}
+            onChange={e => setField("sessionNumber", e.target.value)}
+            sx={inputSx}
+          />
+        </Grid>
+        <Grid item xs={12} sm={9}>
+          <TextField
+            label="Title"
+            fullWidth
+            size="small"
+            value={form.title}
+            onChange={e => setField("title", e.target.value)}
+            placeholder="LLD Introduction + Core Concepts"
+            sx={inputSx}
+          />
+        </Grid>
+        <Grid item xs={12}>
+          <TextField
+            label="Subtitle"
+            fullWidth
+            size="small"
+            value={form.subtitle}
+            onChange={e => setField("subtitle", e.target.value)}
+            placeholder="Foundation★ Start Here"
+            sx={inputSx}
+          />
+        </Grid>
+      </Grid>
+
+      {/* Resources */}
+      <Box mt={2.5}>
+        <Box display="flex" alignItems="center" justifyContent="space-between" mb={1}>
+          <Typography fontWeight={600} fontSize={13} color={S.muted} textTransform="uppercase" letterSpacing={1}>
+            Resources
           </Typography>
-          <Typography variant="body2" color="text.secondary">
-            {subtitle}
-          </Typography>
+          <Button size="small" onClick={addResource} sx={{ ...btn("ghost"), py: 0.5, fontSize: 12 }}>
+            + Add Resource
+          </Button>
         </Box>
-        {isEmpty && <Chip label="Empty" size="small" />}
+
+        {form.resources.map((r, i) => (
+          <Box key={i} display="flex" gap={1.5} mb={1.5} alignItems="center">
+            <TextField
+              size="small"
+              label="Label"
+              value={r.label}
+              onChange={e => setResource(i, "label", e.target.value)}
+              sx={{ ...inputSx, width: 160 }}
+              placeholder="📹 Video"
+            />
+            <TextField
+              size="small"
+              label="URL"
+              value={r.url}
+              onChange={e => setResource(i, "url", e.target.value)}
+              sx={{ ...inputSx, flex: 1 }}
+              placeholder="https://drive.google.com/..."
+            />
+            <Tooltip title="Remove">
+              <IconButton size="small" onClick={() => removeResource(i)} sx={{ color: S.primary }}>
+                ✕
+              </IconButton>
+            </Tooltip>
+          </Box>
+        ))}
       </Box>
 
-      {/* Upload Area */}
-      <Box
-        sx={{
-          flexGrow: 1,
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          minHeight: 200,
-          border: "2px dashed #e5e7eb",
-          borderRadius: 2,
-          backgroundColor: "#f9fafb",
-          position: "relative",
-        }}
-      >
-        {hasImage ? (
-          <img
-            src={imageUrl}
-            alt={title}
-            style={{
-              width: "100%",
-              height: "100%",
-              objectFit: "cover",
-              borderRadius: 8,
-              maxHeight: 200,
-            }}
-          />
+      <Box display="flex" gap={1.5} mt={3}>
+        <Button variant="contained" sx={btn("primary")} disabled={saving} onClick={() => onSave(form)}>
+          {saving ? <CircularProgress size={18} sx={{ color: "#fff" }} /> : "Save Session"}
+        </Button>
+        <Button sx={btn("ghost")} onClick={onCancel}>Cancel</Button>
+      </Box>
+    </Box>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// SESSION ROW
+// ─────────────────────────────────────────────────────────────
+function SessionRow({ session, courseId, onRefresh, setSnack }) {
+  const [editing,  setEditing]  = useState(false);
+  const [saving,   setSaving]   = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  const handleUpdate = async (form) => {
+    setSaving(true);
+    try {
+      await updateSession(courseId, session._id, form);
+      setSnack("Session updated");
+      setEditing(false);
+      onRefresh();
+    } catch {
+      setSnack("Failed to update session");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!window.confirm("Delete this session?")) return;
+    setDeleting(true);
+    try {
+      await deleteSession(courseId, session._id);
+      setSnack("Session deleted");
+      onRefresh();
+    } catch {
+      setSnack("Failed to delete session");
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  return (
+    <Box
+      sx={{
+        border: `1px solid ${S.border}`,
+        borderRadius: "10px",
+        p: 2,
+        mb: 1.5,
+        bgcolor: editing ? "#fef2f2" : "#f8fafc",
+        transition: "background .2s",
+      }}
+    >
+      {editing ? (
+        <SessionForm
+          initial={{ ...session }}
+          onSave={handleUpdate}
+          onCancel={() => setEditing(false)}
+          saving={saving}
+        />
+      ) : (
+        <Box display="flex" alignItems="flex-start" justifyContent="space-between" gap={2}>
+          <Box flex={1}>
+            <Box display="flex" alignItems="center" gap={1} flexWrap="wrap">
+              <Chip
+                label={`Session ${session.sessionNumber}`}
+                size="small"
+                sx={{ bgcolor: S.primary, color: "#fff", fontWeight: 700, fontSize: 11 }}
+              />
+              <Typography fontWeight={700} fontSize={15}>{session.title}</Typography>
+            </Box>
+            {session.subtitle && (
+              <Typography fontSize={13} color={S.muted} mt={0.3}>{session.subtitle}</Typography>
+            )}
+            <Box display="flex" gap={1} mt={1} flexWrap="wrap">
+              {session.resources?.map((r, i) => (
+                <Chip
+                  key={i}
+                  label={r.label}
+                  size="small"
+                  component="a"
+                  href={r.url}
+                  target="_blank"
+                  clickable
+                  sx={{ fontSize: 12, bgcolor: "#fff", border: `1px solid ${S.border}` }}
+                />
+              ))}
+            </Box>
+          </Box>
+          <Box display="flex" gap={1} flexShrink={0}>
+            <Button size="small" sx={btn("ghost")} onClick={() => setEditing(true)}>Edit</Button>
+            <Button size="small" sx={btn("danger")} disabled={deleting} onClick={handleDelete}>
+              {deleting ? <CircularProgress size={14} /> : "Delete"}
+            </Button>
+          </Box>
+        </Box>
+      )}
+    </Box>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// COURSE CARD
+// ─────────────────────────────────────────────────────────────
+function CourseCard({ course, onRefresh, setSnack }) {
+  const [expanded,       setExpanded]       = useState(false);
+  const [addingSession,  setAddingSession]  = useState(false);
+  const [savingSession,  setSavingSession]  = useState(false);
+  const [editingCourse,  setEditingCourse]  = useState(false);
+  const [courseForm,     setCourseForm]     = useState({ title: course.title, isPublished: course.isPublished });
+  const [savingCourse,   setSavingCourse]   = useState(false);
+  const [deletingCourse, setDeletingCourse] = useState(false);
+  const [sessions,       setSessions]       = useState(course.sessions || []);
+
+  // Refresh sessions list — service already unwraps .data, so res = { course: {...} }
+  const refreshSessions = async () => {
+    try {
+      const res = await getCourseById(course._id);
+      setSessions(res.course.sessions || []);
+    } catch {}
+  };
+
+  const handleAddSession = async (form) => {
+    setSavingSession(true);
+    try {
+      await addSession(course._id, form);
+      setSnack("Session added");
+      setAddingSession(false);
+      refreshSessions();
+      onRefresh();
+    } catch {
+      setSnack("Failed to add session");
+    } finally {
+      setSavingSession(false);
+    }
+  };
+
+  const handleUpdateCourse = async () => {
+    setSavingCourse(true);
+    try {
+      await updateCourse(course._id, courseForm);
+      setSnack("Course updated");
+      setEditingCourse(false);
+      onRefresh();
+    } catch {
+      setSnack("Failed to update course");
+    } finally {
+      setSavingCourse(false);
+    }
+  };
+
+  const handleDeleteCourse = async () => {
+    if (!window.confirm(`Delete "${course.title}"?`)) return;
+    setDeletingCourse(true);
+    try {
+      await deleteCourse(course._id);
+      setSnack("Course deleted");
+      onRefresh();
+    } catch {
+      setSnack("Failed to delete course");
+    } finally {
+      setDeletingCourse(false);
+    }
+  };
+
+  return (
+    <Card
+      sx={{
+        mb: 2.5,
+        border: `1px solid ${S.border}`,
+        borderRadius: "14px",
+        boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
+        overflow: "visible",
+      }}
+    >
+      <CardContent sx={{ p: 2.5 }}>
+        {/* Course Header */}
+        {editingCourse ? (
+          <Box>
+            <Grid container spacing={2} alignItems="center">
+              <Grid item xs={12} sm={8}>
+                <TextField
+                  label="Course Title"
+                  fullWidth
+                  size="small"
+                  value={courseForm.title}
+                  onChange={e => setCourseForm(p => ({ ...p, title: e.target.value }))}
+                  sx={inputSx}
+                />
+              </Grid>
+              <Grid item xs={12} sm={4}>
+                <Box display="flex" alignItems="center" gap={1}>
+                  <Switch
+                    checked={courseForm.isPublished}
+                    onChange={e => setCourseForm(p => ({ ...p, isPublished: e.target.checked }))}
+                    sx={{
+                      "& .MuiSwitch-switchBase.Mui-checked": { color: S.primary },
+                      "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": { bgcolor: S.primary },
+                    }}
+                  />
+                  <Typography fontSize={13}>{courseForm.isPublished ? "Published" : "Draft"}</Typography>
+                </Box>
+              </Grid>
+            </Grid>
+            <Box display="flex" gap={1.5} mt={2}>
+              <Button sx={btn("primary")} disabled={savingCourse} onClick={handleUpdateCourse}>
+                {savingCourse ? <CircularProgress size={18} sx={{ color: "#fff" }} /> : "Save"}
+              </Button>
+              <Button sx={btn("ghost")} onClick={() => setEditingCourse(false)}>Cancel</Button>
+            </Box>
+          </Box>
         ) : (
-          <Typography>Upload Banner</Typography>
+          <Box display="flex" alignItems="center" justifyContent="space-between" flexWrap="wrap" gap={1}>
+            <Box display="flex" alignItems="center" gap={1.5} flex={1}>
+              <Box>
+                <Box display="flex" alignItems="center" gap={1}>
+                  <Typography fontWeight={700} fontSize={17}>{course.title}</Typography>
+                  <Chip
+                    label={course.isPublished ? "Published" : "Draft"}
+                    size="small"
+                    sx={{
+                      bgcolor: course.isPublished ? "#dcfce7" : "#fef9c3",
+                      color:   course.isPublished ? "#166534" : "#854d0e",
+                      fontWeight: 600, fontSize: 11,
+                    }}
+                  />
+                </Box>
+                <Typography fontSize={13} color={S.muted}>{course.totalSessions} sessions</Typography>
+              </Box>
+            </Box>
+            <Box display="flex" gap={1}>
+              <Button size="small" sx={btn("ghost")} onClick={() => setExpanded(p => !p)}>
+                {expanded ? "▲ Hide" : "▼ Sessions"}
+              </Button>
+              <Button size="small" sx={btn("ghost")} onClick={() => setEditingCourse(true)}>Edit</Button>
+              <Button size="small" sx={btn("danger")} disabled={deletingCourse} onClick={handleDeleteCourse}>
+                {deletingCourse ? <CircularProgress size={14} /> : "Delete"}
+              </Button>
+            </Box>
+          </Box>
         )}
 
-        <Button
-          component="label"
-          variant="contained"
-          disabled={isUploading}
-          sx={{
-            ...redButtonStyle,
-            position: hasImage ? "absolute" : "static",
-            bottom: hasImage ? 10 : "auto",
-            right: hasImage ? 10 : "auto",
-          }}
-        >
-          {isUploading ? "Uploading..." : hasImage ? "Change" : "Upload"}
-          <input type="file" hidden onChange={onUpload} />
-        </Button>
-      </Box>
-    </CardContent>
-  </Card>
-);
+        {/* Sessions Panel */}
+        {expanded && (
+          <Box mt={2.5}>
+            <Divider sx={{ mb: 2 }} />
 
-// ----------------------------------------------------------
-// 🔥 Dynamic Banner Config (1 → 15)
-// ----------------------------------------------------------
-const BANNER_FIELDS = Array.from({ length: 15 }, (_, i) => ({
-  key: `homeBanner${i + 1}`,
-  title: `Home Banner ${i + 1}`,
-  subtitle: `Banner ${i + 1}`,
-}));
+            {sessions.length === 0 && !addingSession && (
+              <Typography color={S.muted} fontSize={14} textAlign="center" py={2}>
+                No sessions yet. Add one below.
+              </Typography>
+            )}
 
-// ----------------------------------------------------------
-// ✅ Main Component
-// ----------------------------------------------------------
-export default function BannerManager() {
-  const [banner, setBanner] = useState(null);
-  const [snackbar, setSnackbar] = useState({ open: false, message: "" });
-  const [loading, setLoading] = useState(false);
-  const [uploadingKey, setUploadingKey] = useState(null);
+            {sessions
+              .slice()
+              .sort((a, b) => a.sessionNumber - b.sessionNumber)
+              .map(s => (
+                <SessionRow
+                  key={s._id}
+                  session={s}
+                  courseId={course._id}
+                  onRefresh={refreshSessions}
+                  setSnack={setSnack}
+                />
+              ))}
 
-  const fetchBanner = async () => {
+            {addingSession ? (
+              <Box
+                sx={{
+                  border: `1px dashed ${S.primary}`,
+                  borderRadius: "10px",
+                  p: 2.5,
+                  mt: 1.5,
+                  bgcolor: "#fff5f5",
+                }}
+              >
+                <Typography fontWeight={700} fontSize={14} mb={2} color={S.primary}>
+                  New Session
+                </Typography>
+                <SessionForm
+                  onSave={handleAddSession}
+                  onCancel={() => setAddingSession(false)}
+                  saving={savingSession}
+                />
+              </Box>
+            ) : (
+              <Button
+                fullWidth
+                sx={{
+                  ...btn("ghost"),
+                  mt: 1,
+                  border: `1px dashed ${S.border}`,
+                  justifyContent: "center",
+                }}
+                onClick={() => setAddingSession(true)}
+              >
+                + Add Session
+              </Button>
+            )}
+          </Box>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// MAIN — CourseManager
+// ─────────────────────────────────────────────────────────────
+export default function CourseManager() {
+  const [courses,        setCourses]        = useState([]);
+  const [loading,        setLoading]        = useState(false);
+  const [creatingCourse, setCreatingCourse] = useState(false);
+  const [savingNew,      setSavingNew]      = useState(false);
+  const [newCourse,      setNewCourse]      = useState({ title: "", isPublished: false });
+  const [snack,          setSnackState]     = useState({ open: false, message: "" });
+
+  const setSnack = (message) => setSnackState({ open: true, message });
+
+  const fetchCourses = async () => {
     setLoading(true);
     try {
-      const res = await getBanner();
-      setBanner(res.banner || null);
+      // Service returns r.data directly, so res = { courses: [...] }
+      const res = await getAllCourses();
+      setCourses(res.courses || []);
     } catch {
-      setSnackbar({ open: true, message: "Error fetching banner" });
+      setSnack("Error fetching courses");
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchBanner();
-  }, []);
+  useEffect(() => { fetchCourses(); }, []);
 
-  const uploadImageToCloudinary = async (file) => {
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
-
-    const res = await axios.post(
-      `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
-      formData
-    );
-
-    return res.data.secure_url;
-  };
-
-  const handleSubmit = async (values) => {
+  const handleCreateCourse = async () => {
+    if (!newCourse.title.trim()) { setSnack("Course title is required"); return; }
+    setSavingNew(true);
     try {
-      await createBanner(values);
-      setSnackbar({ open: true, message: "Banners saved successfully" });
-      fetchBanner();
+      await createCourse(newCourse);
+      setSnack("Course created");
+      setCreatingCourse(false);
+      setNewCourse({ title: "", isPublished: false });
+      fetchCourses();
     } catch {
-      setSnackbar({ open: true, message: "Error saving banners" });
+      setSnack("Failed to create course");
+    } finally {
+      setSavingNew(false);
     }
   };
 
   return (
-    <Box sx={{ p: 4 }}>
-      <Typography variant="h4" mb={2}>
-        Banner Management
-      </Typography>
-
-      {loading ? (
-        <CircularProgress />
-      ) : (
-        <Formik
-          initialValues={BANNER_FIELDS.reduce((acc, field) => {
-            acc[field.key] = banner?.[field.key] || "";
-            return acc;
-          }, {})}
-          enableReinitialize
-          onSubmit={handleSubmit}
+    <Box sx={{ p: { xs: 2, md: 4 }, bgcolor: S.bg, minHeight: "100vh" }}>
+      {/* Page Header */}
+      <Box display="flex" alignItems="center" justifyContent="space-between" mb={3} flexWrap="wrap" gap={2}>
+        <Box>
+          <Typography variant="h5" fontWeight={800} color={S.text}>Course Manager</Typography>
+          <Typography fontSize={13} color={S.muted}>{courses.length} courses total</Typography>
+        </Box>
+        <Button
+          variant="contained"
+          sx={btn("primary")}
+          onClick={() => setCreatingCourse(p => !p)}
         >
-          {({ setFieldValue, values }) => {
-            const handleUpload = (key) => async (e) => {
-              const file = e.target.files[0];
-              if (!file) return;
+          {creatingCourse ? "Cancel" : "+ New Course"}
+        </Button>
+      </Box>
 
-              setUploadingKey(key);
-              try {
-                const url = await uploadImageToCloudinary(file);
-                setFieldValue(key, url);
-              } catch {
-                setSnackbar({ open: true, message: "Upload failed" });
-              } finally {
-                setUploadingKey(null);
-              }
-            };
-
-            return (
-              <Form>
-                <Grid container spacing={3}>
-                  {BANNER_FIELDS.map(({ key, title, subtitle }) => (
-                    <Grid item xs={12} sm={6} md={4} lg={3} key={key}>
-                      <UploadArea
-                        title={title}
-                        subtitle={subtitle}
-                        hasImage={!!values[key]}
-                        imageUrl={values[key]}
-                        isEmpty={!values[key]}
-                        onUpload={handleUpload(key)}
-                        isUploading={uploadingKey === key}
-                      />
-                    </Grid>
-                  ))}
-                </Grid>
-
-                <Box mt={4} textAlign="center">
-                  <Button
-                    type="submit"
-                    variant="contained"
-                    disabled={!!uploadingKey}
-                    sx={redButtonStyle}
-                  >
-                    Save All Banners
-                  </Button>
-                </Box>
-              </Form>
-            );
+      {/* Create Course Form */}
+      {creatingCourse && (
+        <Card
+          sx={{
+            mb: 3,
+            border: `1px dashed ${S.primary}`,
+            borderRadius: "14px",
+            bgcolor: "#fff5f5",
+            boxShadow: "none",
           }}
-        </Formik>
+        >
+          <CardContent sx={{ p: 2.5 }}>
+            <Typography fontWeight={700} fontSize={15} mb={2} color={S.primary}>
+              New Course
+            </Typography>
+            <Grid container spacing={2} alignItems="center">
+              <Grid item xs={12} sm={8}>
+                <TextField
+                  label="Course Title"
+                  fullWidth
+                  size="small"
+                  value={newCourse.title}
+                  onChange={e => setNewCourse(p => ({ ...p, title: e.target.value }))}
+                  placeholder="e.g. Low Level Design"
+                  sx={inputSx}
+                />
+              </Grid>
+              <Grid item xs={12} sm={4}>
+                <Box display="flex" alignItems="center" gap={1}>
+                  <Switch
+                    checked={newCourse.isPublished}
+                    onChange={e => setNewCourse(p => ({ ...p, isPublished: e.target.checked }))}
+                    sx={{
+                      "& .MuiSwitch-switchBase.Mui-checked": { color: S.primary },
+                      "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": { bgcolor: S.primary },
+                    }}
+                  />
+                  <Typography fontSize={13}>{newCourse.isPublished ? "Published" : "Draft"}</Typography>
+                </Box>
+              </Grid>
+            </Grid>
+            <Box mt={2} display="flex" gap={1.5}>
+              <Button sx={btn("primary")} disabled={savingNew} onClick={handleCreateCourse}>
+                {savingNew ? <CircularProgress size={18} sx={{ color: "#fff" }} /> : "Create Course"}
+              </Button>
+              <Button sx={btn("ghost")} onClick={() => setCreatingCourse(false)}>Cancel</Button>
+            </Box>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Course List */}
+      {loading ? (
+        <Box display="flex" justifyContent="center" pt={6}>
+          <CircularProgress sx={{ color: S.primary }} />
+        </Box>
+      ) : courses.length === 0 ? (
+        <Box textAlign="center" pt={8}>
+          <Typography fontSize={40} mb={1}>📚</Typography>
+          <Typography color={S.muted}>No courses yet. Create your first one!</Typography>
+        </Box>
+      ) : (
+        courses.map(course => (
+          <CourseCard
+            key={course._id}
+            course={course}
+            onRefresh={fetchCourses}
+            setSnack={setSnack}
+          />
+        ))
       )}
 
       <Snackbar
-        open={snackbar.open}
+        open={snack.open}
         autoHideDuration={3000}
-        onClose={() => setSnackbar({ open: false, message: "" })}
-        message={snackbar.message}
+        onClose={() => setSnackState(p => ({ ...p, open: false }))}
+        message={snack.message}
       />
     </Box>
   );

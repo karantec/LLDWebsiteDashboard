@@ -18,13 +18,15 @@ import { setToken, getToken } from 'src/utils/auth';
 import Iconify from 'src/components/iconify';
 
 // ─── Design Tokens ───────────────────────────────────────────────────────────
-const INK       = '#0d0f0e';
-const PAPER     = '#f5f2ec';
-const ACCENT    = '#e8c547';
-const ACCENT2   = '#c45c2a';
-const STEEL     = '#3a3d38';
-const MIST      = '#9a9990';
-const RULE      = '#2a2d28';
+const DEEP      = '#0f1117';
+const SURFACE   = '#161b27';
+const CARD      = '#1c2235';
+const VIOLET    = '#7c6ff7';
+const VIOLET_LT = '#a89eff';
+const TEAL      = '#38d9c0';
+const WARM      = '#f5f0e8';
+const MUTED     = '#6b7280';
+const BORDER    = '#252d42';
 
 export default function LoginView() {
   const navigate = useNavigate();
@@ -35,12 +37,12 @@ export default function LoginView() {
     }
   }, [navigate]);
 
-  const [showPassword, setShowPassword]   = useState(false);
-  const [email, setEmail]                 = useState('');
-  const [password, setPassword]           = useState('');
-  const [loading, setLoading]             = useState(false);
-  const [error, setError]                 = useState('');
-  const [focused, setFocused]             = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [email, setEmail]               = useState('');
+  const [password, setPassword]         = useState('');
+  const [loading, setLoading]           = useState(false);
+  const [error, setError]               = useState('');
+  const [focused, setFocused]           = useState('');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -61,34 +63,64 @@ export default function LoginView() {
     }
   };
 
+  const stats = [
+    { value: '12,400+', label: 'Students Enrolled' },
+    { value: '340',     label: 'Active Courses' },
+    { value: '98%',     label: 'Completion Rate' },
+  ];
+
+  const modules = [
+    { icon: '📚', title: 'Course Builder',  desc: 'Create & manage curriculum' },
+    { icon: '👥', title: 'Student Roster',  desc: 'Track enrolments & progress' },
+    { icon: '📊', title: 'Analytics',       desc: 'Performance & engagement' },
+    { icon: '🎓', title: 'Certifications',  desc: 'Issue & verify credentials' },
+  ];
+
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Syne:wght@400;500;600;700;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Lora:ital,wght@0,400;1,400;1,600&display=swap');
 
+        *, *::before, *::after { box-sizing: border-box; }
+
+        @keyframes floatA {
+          0%,100% { transform: translateY(0px) rotate(0deg); }
+          50%      { transform: translateY(-14px) rotate(3deg); }
+        }
+        @keyframes floatB {
+          0%,100% { transform: translateY(0px) rotate(0deg); }
+          50%      { transform: translateY(10px) rotate(-4deg); }
+        }
         @keyframes slideUp {
-          from { opacity: 0; transform: translateY(22px); }
-          to   { opacity: 1; transform: translateY(0); }
+          from { opacity:0; transform:translateY(28px); }
+          to   { opacity:1; transform:translateY(0); }
         }
-        @keyframes fadeIn {
-          from { opacity: 0; }
-          to   { opacity: 1; }
-        }
-        @keyframes marquee {
-          from { transform: translateX(0); }
-          to   { transform: translateX(-50%); }
-        }
-        @keyframes pulse-dot {
-          0%, 100% { opacity: 1; transform: scale(1); }
-          50%       { opacity: 0.4; transform: scale(0.7); }
+        @keyframes shimmer {
+          0%   { background-position: -400px 0; }
+          100% { background-position:  400px 0; }
         }
 
-        .login-card  { animation: slideUp 0.55s cubic-bezier(.22,.68,0,1.2) both; }
-        .login-left  { animation: fadeIn 0.7s ease both; }
+        .form-card   { animation: slideUp 0.5s cubic-bezier(.22,.68,0,1.15) 0.1s both; }
+        .stat-card   { animation: slideUp 0.5s cubic-bezier(.22,.68,0,1.15) both; }
+        .stat-card:nth-child(2) { animation-delay: 0.07s; }
+        .stat-card:nth-child(3) { animation-delay: 0.14s; }
 
-        .field-wrap input:-webkit-autofill {
-          -webkit-box-shadow: 0 0 0 40px ${INK} inset !important;
-          -webkit-text-fill-color: ${PAPER} !important;
+        .module-pill:hover { background: rgba(124,111,247,0.12) !important; border-color: rgba(124,111,247,0.35) !important; }
+        .module-pill:hover .module-title { color: ${VIOLET_LT} !important; }
+
+        .submit-btn::after {
+          content:''; position:absolute; inset:0;
+          background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.08) 50%, transparent 100%);
+          background-size: 400px 100%; opacity:0; transition: opacity 0.2s;
+        }
+        .submit-btn:hover::after { opacity:1; animation: shimmer 1.2s infinite; }
+
+        input:-webkit-autofill,
+        input:-webkit-autofill:hover,
+        input:-webkit-autofill:focus {
+          -webkit-box-shadow: 0 0 0 40px ${CARD} inset !important;
+          -webkit-text-fill-color: ${WARM} !important;
+          caret-color: ${WARM};
         }
       `}</style>
 
@@ -96,397 +128,283 @@ export default function LoginView() {
         sx={{
           display: 'flex',
           minHeight: '100vh',
-          fontFamily: "'Syne', sans-serif",
-          background: INK,
+          fontFamily: "'Plus Jakarta Sans', sans-serif",
+          background: DEEP,
+          overflow: 'hidden',
         }}
       >
-        {/* ── Left: decorative editorial panel ─────────────────────────── */}
+        {/* ══════════════════════════ LEFT PANEL ══════════════════════════ */}
         <Box
-          className="login-left"
           sx={{
             display: { xs: 'none', lg: 'flex' },
-            width: '52%',
+            width: '50%',
             flexDirection: 'column',
             justifyContent: 'space-between',
+            p: '40px 48px',
             position: 'relative',
             overflow: 'hidden',
-            borderRight: `1px solid ${RULE}`,
-            p: 5,
+            background: SURFACE,
+            borderRight: `1px solid ${BORDER}`,
           }}
         >
-          {/* Noise texture overlay */}
-          <Box
-            sx={{
-              position: 'absolute', inset: 0, zIndex: 0,
-              backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E")`,
-              backgroundSize: '200px 200px',
-              pointerEvents: 'none',
-            }}
-          />
+          {/* Ambient blobs */}
+          <Box sx={{
+            position:'absolute', top:-80, left:-80,
+            width:340, height:340, borderRadius:'50%',
+            background:'radial-gradient(circle, rgba(124,111,247,0.14) 0%, transparent 70%)',
+            animation:'floatA 7s ease-in-out infinite', pointerEvents:'none',
+          }}/>
+          <Box sx={{
+            position:'absolute', bottom:60, right:-60,
+            width:260, height:260, borderRadius:'50%',
+            background:'radial-gradient(circle, rgba(56,217,192,0.10) 0%, transparent 70%)',
+            animation:'floatB 9s ease-in-out infinite', pointerEvents:'none',
+          }}/>
 
-          {/* Large background type */}
-          <Typography
-            sx={{
-              position: 'absolute',
-              top: '50%', left: '50%',
-              transform: 'translate(-50%, -52%) rotate(-6deg)',
-              fontFamily: "'Cormorant Garamond', serif",
-              fontStyle: 'italic',
-              fontSize: 'clamp(80px, 13vw, 160px)',
-              fontWeight: 300,
-              color: 'rgba(255,255,255,0.03)',
-              whiteSpace: 'nowrap',
-              userSelect: 'none',
-              pointerEvents: 'none',
-              zIndex: 0,
-              letterSpacing: '-2px',
-            }}
-          >
-            Print
-          </Typography>
+          {/* Dot grid */}
+          <Box sx={{
+            position:'absolute', inset:0, pointerEvents:'none', opacity:0.3,
+            backgroundImage:`radial-gradient(circle, rgba(255,255,255,0.12) 1px, transparent 1px)`,
+            backgroundSize:'28px 28px',
+          }}/>
 
-          {/* Grid lines accent */}
-          {[0, 1, 2, 3].map((i) => (
-            <Box
-              key={i}
-              sx={{
-                position: 'absolute',
-                left: `${18 + i * 22}%`,
-                top: 0, bottom: 0,
-                width: '1px',
-                background: 'rgba(255,255,255,0.025)',
-                zIndex: 0,
-              }}
-            />
-          ))}
-
-          {/* ── Top: logo mark ── */}
-          <Box sx={{ zIndex: 1, display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Box
-              sx={{
-                width: 36, height: 36,
-                border: `1.5px solid ${ACCENT}`,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                flexShrink: 0,
-              }}
-            >
-              <Box
-                sx={{
-                  width: 10, height: 10,
-                  background: ACCENT,
-                }}
-              />
+          {/* Brand */}
+          <Box sx={{ display:'flex', alignItems:'center', gap:1.5, zIndex:1 }}>
+            <Box sx={{
+              width:38, height:38, borderRadius:'10px',
+              background:`linear-gradient(135deg, ${VIOLET} 0%, ${TEAL} 100%)`,
+              display:'flex', alignItems:'center', justifyContent:'center',
+              fontSize:18, flexShrink:0,
+              boxShadow:`0 0 20px rgba(124,111,247,0.4)`,
+            }}>
+              🎓
             </Box>
             <Box>
-              <Typography
-                sx={{
-                  fontFamily: "'Syne', sans-serif",
-                  fontWeight: 700, fontSize: 15,
-                  color: PAPER, letterSpacing: 1.5,
-                  textTransform: 'uppercase',
-                }}
-              >
-                DLX Print
+              <Typography sx={{
+                fontFamily:"'Plus Jakarta Sans', sans-serif",
+                fontWeight:700, fontSize:15, color:WARM, letterSpacing:0.3,
+              }}>
+                LearnHub
               </Typography>
-              <Typography sx={{ fontSize: 10, color: MIST, letterSpacing: 3, textTransform: 'uppercase' }}>
-                Administration
+              <Typography sx={{ fontSize:10, color:MUTED, letterSpacing:2, textTransform:'uppercase' }}>
+                Admin Portal
               </Typography>
             </Box>
           </Box>
 
-          {/* ── Centre: headline ── */}
-          <Box sx={{ zIndex: 1 }}>
-            {/* Issue badge */}
-            <Box
-              sx={{
-                display: 'inline-flex', alignItems: 'center', gap: 1,
-                border: `1px solid ${RULE}`,
-                px: 1.5, py: 0.5, mb: 3,
-              }}
-            >
-              <Box
-                sx={{
-                  width: 6, height: 6, borderRadius: '50%',
-                  background: ACCENT,
-                  animation: 'pulse-dot 2s ease-in-out infinite',
-                }}
-              />
-              <Typography sx={{ fontSize: 10, color: MIST, letterSpacing: 3, textTransform: 'uppercase' }}>
-                Admin Portal — Active
+          {/* Hero copy */}
+          <Box sx={{ zIndex:1 }}>
+            <Box sx={{
+              display:'inline-flex', alignItems:'center', gap:1,
+              background:'rgba(56,217,192,0.1)',
+              border:'1px solid rgba(56,217,192,0.25)',
+              borderRadius:'20px', px:1.5, py:0.5, mb:3,
+            }}>
+              <Box sx={{ width:6, height:6, borderRadius:'50%', background:TEAL }} />
+              <Typography sx={{ fontSize:10, color:TEAL, letterSpacing:2, textTransform:'uppercase', fontWeight:600 }}>
+                Platform Online
               </Typography>
             </Box>
 
-            <Typography
-              sx={{
-                fontFamily: "'Cormorant Garamond', serif",
-                fontWeight: 300, fontStyle: 'italic',
-                fontSize: 'clamp(36px, 4vw, 56px)',
-                color: PAPER,
-                lineHeight: 1.1,
-                mb: 0.5,
-              }}
-            >
-              Premium Print
+            <Typography sx={{
+              fontFamily:"'Lora', serif",
+              fontStyle:'italic',
+              fontSize:'clamp(28px, 3.2vw, 42px)',
+              fontWeight:400,
+              color:'rgba(245,240,232,0.5)',
+              lineHeight:1.15,
+              mb:0.5,
+            }}>
+              Empower every
             </Typography>
-            <Typography
-              sx={{
-                fontFamily: "'Syne', sans-serif",
-                fontWeight: 800,
-                fontSize: 'clamp(36px, 4vw, 56px)',
-                color: ACCENT,
-                lineHeight: 1.1,
-                textTransform: 'uppercase',
-                letterSpacing: '-1px',
-                mb: 3,
-              }}
-            >
-              Management
+            <Typography sx={{
+              fontFamily:"'Plus Jakarta Sans', sans-serif",
+              fontWeight:800,
+              fontSize:'clamp(28px, 3.2vw, 42px)',
+              lineHeight:1.1,
+              letterSpacing:'-1px',
+              mb:3,
+              background:`linear-gradient(90deg, ${WARM} 0%, ${VIOLET_LT} 100%)`,
+              WebkitBackgroundClip:'text',
+              WebkitTextFillColor:'transparent',
+            }}>
+              Student&apos;s Journey
             </Typography>
 
-            <Box sx={{ width: 40, height: 2, background: ACCENT2, mb: 3 }} />
-
-            <Typography
-              sx={{
-                fontFamily: "'Cormorant Garamond', serif",
-                fontSize: 17, fontWeight: 300,
-                color: MIST, lineHeight: 1.8,
-                maxWidth: 360,
-              }}
-            >
-              Oversee orders, clients, and production from one unified dashboard — built for operators who demand precision.
+            <Typography sx={{ fontSize:14, color:MUTED, lineHeight:1.8, maxWidth:360, fontWeight:400 }}>
+              Your command center for courses, learners, and outcomes — everything you need to run a world-class learning experience.
             </Typography>
-          </Box>
 
-          {/* ── Bottom: stat strip ── */}
-          <Box
-            sx={{
-              zIndex: 1,
-              display: 'grid',
-              gridTemplateColumns: 'repeat(3, 1fr)',
-              gap: 0,
-              borderTop: `1px solid ${RULE}`,
-              pt: 3,
-            }}
-          >
-            {[
-              { n: '400gsm', l: 'Card Stock' },
-              { n: '24 hr',  l: 'Turnaround' },
-              { n: '100%',   l: 'UAE-local' },
-            ].map((s, i) => (
-              <Box
-                key={i}
-                sx={{
-                  borderRight: i < 2 ? `1px solid ${RULE}` : 'none',
-                  pr: 2.5, pl: i > 0 ? 2.5 : 0,
-                }}
-              >
-                <Typography
+            {/* Module pills */}
+            <Box sx={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:1.5, mt:3.5 }}>
+              {modules.map((m) => (
+                <Box
+                  key={m.title}
+                  className="module-pill"
                   sx={{
-                    fontFamily: "'Syne', sans-serif",
-                    fontWeight: 700, fontSize: 20,
-                    color: PAPER, letterSpacing: '-0.5px',
+                    display:'flex', alignItems:'center', gap:1.25,
+                    background:'rgba(255,255,255,0.03)',
+                    border:`1px solid ${BORDER}`,
+                    borderRadius:'10px',
+                    p:'10px 12px',
+                    cursor:'default',
+                    transition:'all 0.2s',
                   }}
                 >
-                  {s.n}
+                  <Box sx={{ fontSize:18, lineHeight:1, flexShrink:0 }}>{m.icon}</Box>
+                  <Box>
+                    <Typography className="module-title" sx={{
+                      fontSize:12, fontWeight:600, color:WARM,
+                      transition:'color 0.2s', lineHeight:1.3,
+                    }}>
+                      {m.title}
+                    </Typography>
+                    <Typography sx={{ fontSize:10, color:MUTED, mt:0.25 }}>{m.desc}</Typography>
+                  </Box>
+                </Box>
+              ))}
+            </Box>
+          </Box>
+
+          {/* Stats */}
+          <Box sx={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:1.5, zIndex:1 }}>
+            {stats.map((s, i) => (
+              <Box
+                key={i}
+                className="stat-card"
+                sx={{
+                  background:'rgba(255,255,255,0.03)',
+                  border:`1px solid ${BORDER}`,
+                  borderRadius:'12px',
+                  p:'14px 16px',
+                }}
+              >
+                <Typography sx={{
+                  fontFamily:"'Plus Jakarta Sans', sans-serif",
+                  fontWeight:800, fontSize:20, color:WARM,
+                  letterSpacing:'-0.5px', lineHeight:1,
+                }}>
+                  {s.value}
                 </Typography>
-                <Typography sx={{ fontSize: 10, color: MIST, letterSpacing: 2, textTransform: 'uppercase', mt: 0.25 }}>
-                  {s.l}
+                <Typography sx={{ fontSize:10, color:MUTED, mt:0.75, lineHeight:1.4 }}>
+                  {s.label}
                 </Typography>
               </Box>
             ))}
           </Box>
-
-          {/* Marquee tape */}
-          <Box
-            sx={{
-              position: 'absolute',
-              bottom: 0, left: 0, right: 0,
-              height: 28,
-              background: ACCENT,
-              overflow: 'hidden',
-              display: 'flex', alignItems: 'center',
-            }}
-          >
-            <Box
-              sx={{
-                display: 'flex',
-                animation: 'marquee 18s linear infinite',
-                whiteSpace: 'nowrap',
-              }}
-            >
-              {Array(12).fill('✦  DELUXE PRINTING  ·  DUBAI  ·  EST. 2018  ').map((t, i) => (
-                <Typography
-                  key={i}
-                  sx={{
-                    fontFamily: "'Syne', sans-serif",
-                    fontSize: 10, fontWeight: 700,
-                    letterSpacing: 2, color: INK,
-                    textTransform: 'uppercase',
-                    pr: 3,
-                  }}
-                >
-                  {t}
-                </Typography>
-              ))}
-            </Box>
-          </Box>
         </Box>
 
-        {/* ── Right: login form ─────────────────────────────────────────── */}
+        {/* ══════════════════════════ RIGHT PANEL ══════════════════════════ */}
         <Box
           sx={{
-            flex: 1,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            p: { xs: 3, md: 6 },
-            position: 'relative',
-            background: INK,
+            flex:1,
+            display:'flex',
+            alignItems:'center',
+            justifyContent:'center',
+            p:{ xs:3, md:5 },
+            position:'relative',
+            background: DEEP,
           }}
         >
-          {/* Subtle radial glow */}
-          <Box
-            sx={{
-              position: 'absolute',
-              top: '30%', right: '10%',
-              width: 320, height: 320,
-              background: `radial-gradient(circle, rgba(232,197,71,0.06) 0%, transparent 70%)`,
-              pointerEvents: 'none',
-            }}
-          />
+          {/* Glow */}
+          <Box sx={{
+            position:'absolute',
+            top:'20%', left:'50%', transform:'translateX(-50%)',
+            width:500, height:300,
+            background:`radial-gradient(ellipse, rgba(124,111,247,0.08) 0%, transparent 70%)`,
+            pointerEvents:'none',
+          }}/>
 
-          <Box className="login-card" sx={{ width: '100%', maxWidth: 360, position: 'relative', zIndex: 1 }}>
+          <Box className="form-card" sx={{ width:'100%', maxWidth:380, zIndex:1 }}>
 
-            {/* Mobile logo */}
-            <Box sx={{ display: { xs: 'flex', lg: 'none' }, alignItems: 'center', gap: 1.5, mb: 4 }}>
-              <Box
-                sx={{
-                  width: 28, height: 28,
-                  border: `1.5px solid ${ACCENT}`,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}
-              >
-                <Box sx={{ width: 8, height: 8, background: ACCENT }} />
-              </Box>
-              <Typography sx={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 14, color: PAPER, letterSpacing: 2, textTransform: 'uppercase' }}>
-                DLX Print
-              </Typography>
-            </Box>
-
-            {/* Step label */}
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 3.5 }}>
-              <Box sx={{ width: 24, height: 1, background: RULE }} />
-              <Typography sx={{ fontSize: 10, color: MIST, letterSpacing: 3, textTransform: 'uppercase' }}>
-                Secure Sign-In
+            {/* Mobile brand */}
+            <Box sx={{ display:{ xs:'flex', lg:'none' }, alignItems:'center', gap:1.5, mb:4 }}>
+              <Box sx={{
+                width:32, height:32, borderRadius:'8px',
+                background:`linear-gradient(135deg, ${VIOLET} 0%, ${TEAL} 100%)`,
+                display:'flex', alignItems:'center', justifyContent:'center', fontSize:16,
+              }}>🎓</Box>
+              <Typography sx={{ fontWeight:700, fontSize:15, color:WARM, fontFamily:"'Plus Jakarta Sans', sans-serif" }}>
+                LearnHub Admin
               </Typography>
             </Box>
 
             {/* Heading */}
-            <Typography
-              sx={{
-                fontFamily: "'Cormorant Garamond', serif",
-                fontStyle: 'italic',
-                fontWeight: 300,
-                fontSize: 42,
-                color: PAPER,
-                lineHeight: 1,
-                mb: 0.25,
-              }}
-            >
-              Welcome
-            </Typography>
-            <Typography
-              sx={{
-                fontFamily: "'Syne', sans-serif",
-                fontWeight: 800,
-                fontSize: 42,
-                color: ACCENT,
-                lineHeight: 1,
-                textTransform: 'uppercase',
-                letterSpacing: '-1px',
-                mb: 4,
-              }}
-            >
-              Back.
-            </Typography>
+            <Box sx={{ mb:4 }}>
+              <Typography sx={{
+                fontSize:11, fontWeight:600, letterSpacing:3,
+                textTransform:'uppercase', color:VIOLET_LT, mb:1.5,
+              }}>
+                Admin Access
+              </Typography>
+              <Typography sx={{
+                fontFamily:"'Plus Jakarta Sans', sans-serif",
+                fontWeight:800, fontSize:32, color:WARM,
+                letterSpacing:'-0.8px', lineHeight:1.15, mb:0.75,
+              }}>
+                Sign in to your<br />dashboard
+              </Typography>
+              <Typography sx={{ fontSize:13, color:MUTED, fontWeight:400 }}>
+                Manage courses, students, and more.
+              </Typography>
+            </Box>
 
             {/* Form */}
-            <form onSubmit={handleSubmit} className="field-wrap">
-              <Stack spacing={0} sx={{ gap: 0 }}>
+            <form onSubmit={handleSubmit}>
+              <Stack spacing={2.5}>
 
-                {/* Email field */}
-                <Box sx={{ mb: 0, position: 'relative' }}>
-                  <Typography
-                    component="label"
-                    sx={{
-                      display: 'block',
-                      fontSize: 9, fontWeight: 600,
-                      letterSpacing: 3, textTransform: 'uppercase',
-                      color: focused === 'email' ? ACCENT : MIST,
-                      mb: 1,
-                      transition: 'color 0.2s',
-                    }}
-                  >
-                    Email Address
+                {/* Email */}
+                <Box>
+                  <Typography component="label" sx={{
+                    display:'block', fontSize:11, fontWeight:600,
+                    letterSpacing:1.5, textTransform:'uppercase',
+                    color: focused==='email' ? VIOLET_LT : MUTED,
+                    mb:0.875, transition:'color 0.2s',
+                  }}>
+                    Email
                   </Typography>
                   <TextField
                     fullWidth
                     type="email"
-                    placeholder="admin@dlxprint.com"
+                    placeholder="admin@learnhub.com"
                     value={email}
                     onFocus={() => setFocused('email')}
                     onBlur={() => setFocused('')}
                     onChange={(e) => setEmail(e.target.value)}
                     variant="outlined"
                     sx={{
-                      mb: 3,
                       '& .MuiOutlinedInput-root': {
-                        background: 'transparent',
-                        borderRadius: 0,
-                        fontFamily: "'Syne', sans-serif",
-                        fontSize: 14,
-                        color: PAPER,
-                        '& fieldset': {
-                          borderColor: RULE,
-                          borderWidth: '0 0 1.5px 0',
-                          borderRadius: 0,
-                          transition: 'border-color 0.2s',
-                        },
-                        '&:hover fieldset': { borderColor: STEEL },
-                        '&.Mui-focused fieldset': { borderColor: ACCENT, borderWidth: '0 0 1.5px 0' },
+                        background: CARD, borderRadius:'10px',
+                        fontFamily:"'Plus Jakarta Sans', sans-serif",
+                        fontSize:14, color:WARM,
+                        '& fieldset': { borderColor:BORDER, borderWidth:1.5, transition:'border-color 0.2s' },
+                        '&:hover fieldset': { borderColor:'#3a4260' },
+                        '&.Mui-focused fieldset': { borderColor:VIOLET, borderWidth:2 },
                       },
                       '& .MuiOutlinedInput-input': {
-                        py: 1.25, px: 0,
-                        '&::placeholder': { color: STEEL, opacity: 1, fontSize: 13 },
+                        py:1.5, px:1.75,
+                        '&::placeholder':{ color:MUTED, opacity:1, fontSize:13 },
                       },
                     }}
                   />
                 </Box>
 
-                {/* Password field */}
-                <Box sx={{ position: 'relative' }}>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                    <Typography
-                      component="label"
-                      sx={{
-                        fontSize: 9, fontWeight: 600,
-                        letterSpacing: 3, textTransform: 'uppercase',
-                        color: focused === 'password' ? ACCENT : MIST,
-                        transition: 'color 0.2s',
-                      }}
-                    >
+                {/* Password */}
+                <Box>
+                  <Box sx={{ display:'flex', justifyContent:'space-between', mb:0.875 }}>
+                    <Typography component="label" sx={{
+                      fontSize:11, fontWeight:600, letterSpacing:1.5,
+                      textTransform:'uppercase',
+                      color: focused==='password' ? VIOLET_LT : MUTED,
+                      transition:'color 0.2s',
+                    }}>
                       Password
                     </Typography>
-                    <Typography
-                      sx={{
-                        fontSize: 9, color: MIST,
-                        letterSpacing: 1.5, textTransform: 'uppercase',
-                        cursor: 'pointer', fontFamily: "'Syne', sans-serif",
-                        '&:hover': { color: ACCENT },
-                        transition: 'color 0.2s',
-                      }}
-                    >
-                      Forgot?
+                    <Typography sx={{
+                      fontSize:11, color:VIOLET_LT, fontWeight:500, cursor:'pointer',
+                      '&:hover':{ textDecoration:'underline' },
+                    }}>
+                      Forgot password?
                     </Typography>
                   </Box>
                   <TextField
@@ -499,43 +417,33 @@ export default function LoginView() {
                     onChange={(e) => setPassword(e.target.value)}
                     variant="outlined"
                     InputProps={{
-                      endAdornment: (
+                      endAdornment:(
                         <InputAdornment position="end">
                           <IconButton
                             onClick={() => setShowPassword(!showPassword)}
-                            edge="end"
-                            size="small"
-                            disableRipple
-                            sx={{ color: STEEL, '&:hover': { color: ACCENT } }}
+                            edge="end" size="small" disableRipple
+                            sx={{ color:MUTED, '&:hover':{ color:VIOLET_LT } }}
                           >
                             <Iconify
                               icon={showPassword ? 'eva:eye-fill' : 'eva:eye-off-fill'}
-                              sx={{ fontSize: 17, transition: 'color 0.2s' }}
+                              sx={{ fontSize:17 }}
                             />
                           </IconButton>
                         </InputAdornment>
                       ),
                     }}
                     sx={{
-                      mb: 3.5,
                       '& .MuiOutlinedInput-root': {
-                        background: 'transparent',
-                        borderRadius: 0,
-                        fontFamily: "'Syne', sans-serif",
-                        fontSize: 14,
-                        color: PAPER,
-                        '& fieldset': {
-                          borderColor: RULE,
-                          borderWidth: '0 0 1.5px 0',
-                          borderRadius: 0,
-                          transition: 'border-color 0.2s',
-                        },
-                        '&:hover fieldset': { borderColor: STEEL },
-                        '&.Mui-focused fieldset': { borderColor: ACCENT, borderWidth: '0 0 1.5px 0' },
+                        background:CARD, borderRadius:'10px',
+                        fontFamily:"'Plus Jakarta Sans', sans-serif",
+                        fontSize:14, color:WARM,
+                        '& fieldset': { borderColor:BORDER, borderWidth:1.5, transition:'border-color 0.2s' },
+                        '&:hover fieldset': { borderColor:'#3a4260' },
+                        '&.Mui-focused fieldset': { borderColor:VIOLET, borderWidth:2 },
                       },
                       '& .MuiOutlinedInput-input': {
-                        py: 1.25, px: 0,
-                        '&::placeholder': { color: STEEL, opacity: 1, fontSize: 13 },
+                        py:1.5, px:1.75,
+                        '&::placeholder':{ color:MUTED, opacity:1, fontSize:13 },
                       },
                     }}
                   />
@@ -546,15 +454,12 @@ export default function LoginView() {
                   <Alert
                     severity="error"
                     sx={{
-                      mb: 2,
-                      background: 'rgba(196, 92, 42, 0.1)',
-                      border: `1px solid rgba(196, 92, 42, 0.3)`,
-                      borderRadius: 0,
-                      fontSize: 12,
-                      color: '#e88060',
-                      fontFamily: "'Syne', sans-serif",
-                      letterSpacing: 0.5,
-                      '& .MuiAlert-icon': { color: ACCENT2 },
+                      background:'rgba(239,68,68,0.08)',
+                      border:'1px solid rgba(239,68,68,0.25)',
+                      borderRadius:'10px',
+                      fontSize:12, color:'#f87171',
+                      fontFamily:"'Plus Jakarta Sans', sans-serif",
+                      '& .MuiAlert-icon':{ color:'#f87171' },
                     }}
                   >
                     {error}
@@ -566,54 +471,45 @@ export default function LoginView() {
                   fullWidth
                   type="submit"
                   loading={loading}
+                  className="submit-btn"
                   sx={{
-                    py: 1.75,
-                    background: ACCENT,
-                    color: INK,
-                    fontFamily: "'Syne', sans-serif",
-                    fontSize: 11,
-                    fontWeight: 700,
-                    letterSpacing: 3,
-                    borderRadius: 0,
-                    textTransform: 'uppercase',
-                    position: 'relative',
-                    overflow: 'hidden',
-                    '&::before': {
-                      content: '""',
-                      position: 'absolute',
-                      top: 0, left: '-100%',
-                      width: '100%', height: '100%',
-                      background: 'rgba(255,255,255,0.15)',
-                      transition: 'left 0.3s ease',
-                    },
-                    '&:hover::before': { left: '100%' },
+                    mt:0.5, py:1.65,
+                    background:`linear-gradient(135deg, ${VIOLET} 0%, #5b52e0 100%)`,
+                    color:'#fff',
+                    fontFamily:"'Plus Jakarta Sans', sans-serif",
+                    fontSize:14, fontWeight:700,
+                    letterSpacing:0.5,
+                    borderRadius:'10px',
+                    textTransform:'none',
+                    position:'relative', overflow:'hidden',
+                    boxShadow:`0 4px 24px rgba(124,111,247,0.35)`,
                     '&:hover': {
-                      background: '#f0cf5a',
+                      background:`linear-gradient(135deg, #8c82f8 0%, ${VIOLET} 100%)`,
+                      boxShadow:`0 6px 32px rgba(124,111,247,0.5)`,
                     },
-                    '&:active': { transform: 'scale(0.985)' },
-                    '&.MuiLoadingButton-loading': { background: ACCENT, opacity: 0.7 },
-                    '& .MuiLoadingButton-loadingIndicator': { color: INK },
-                    transition: 'background 0.2s, transform 0.1s',
+                    '&:active':{ transform:'scale(0.98)' },
+                    '&.MuiLoadingButton-loading':{ background:`linear-gradient(135deg, ${VIOLET} 0%, #5b52e0 100%)`, opacity:0.7 },
+                    '& .MuiLoadingButton-loadingIndicator':{ color:'#fff' },
+                    transition:'all 0.2s',
                   }}
                 >
-                  Enter Dashboard
+                  Access Dashboard →
                 </LoadingButton>
 
               </Stack>
             </form>
 
-            {/* Footer tag */}
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mt: 4 }}>
-              <Box sx={{ flex: 1, height: '1px', background: RULE }} />
-              <Typography sx={{ fontSize: 9, color: STEEL, letterSpacing: 3, textTransform: 'uppercase' }}>
-                Authorized Only
+            {/* Footer rule */}
+            <Box sx={{ display:'flex', alignItems:'center', gap:1.5, mt:3.5 }}>
+              <Box sx={{ flex:1, height:'1px', background:BORDER }} />
+              <Typography sx={{ fontSize:10, color:MUTED, letterSpacing:2, textTransform:'uppercase' }}>
+                Authorized Personnel Only
               </Typography>
-              <Box sx={{ flex: 1, height: '1px', background: RULE }} />
+              <Box sx={{ flex:1, height:'1px', background:BORDER }} />
             </Box>
 
           </Box>
         </Box>
-
       </Box>
     </>
   );
