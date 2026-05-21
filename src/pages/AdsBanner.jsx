@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import {
   Box, Button, Card, CardContent, Chip, CircularProgress,
   Divider, Grid, IconButton, Snackbar, Switch, TextField,
-  Tooltip, Typography,
+  Tooltip, Typography, MenuItem,
 } from "@mui/material";
 
 // ── Import from your service file ─────────────────────────────
@@ -27,6 +27,8 @@ const S = {
   border:    "#e2e8f0",
   text:      "#0f172a",
   muted:     "#64748b",
+  green:     "#10b981",
+  red:       "#ef4444",
 };
 
 const btn = (variant = "primary") => ({
@@ -53,11 +55,30 @@ const inputSx = {
   "& .MuiInputLabel-root.Mui-focused": { color: S.primary },
 };
 
+// Category options with colors
+const categoryOptions = [
+  { value: "Basic", label: "Basic", color: S.green },
+  { value: "Standard", label: "Standard", color: S.green },
+  { value: "Non Standard", label: "Non Standard", color: S.red },
+];
+
+const getCategoryColor = (category) => {
+  switch(category) {
+    case "Basic": return S.green;
+    case "Standard": return S.green;
+    case "Non Standard": return S.red;
+    default: return S.muted;
+  }
+};
+
 // ── Empty session template ─────────────────────────────────────
 const emptySession = () => ({
   sessionNumber: "",
   title:         "",
   subtitle:      "",
+  serialNumber:  "",
+  questionLink:  "",
+  category:      "",
   resources:     [{ label: "📹 Video", url: "" }, { label: "📋 Doc", url: "" }],
 });
 
@@ -91,6 +112,7 @@ function SessionForm({ initial, onSave, onCancel, saving }) {
             value={form.sessionNumber}
             onChange={e => setField("sessionNumber", e.target.value)}
             sx={inputSx}
+            required
           />
         </Grid>
         <Grid item xs={12} sm={9}>
@@ -102,6 +124,7 @@ function SessionForm({ initial, onSave, onCancel, saving }) {
             onChange={e => setField("title", e.target.value)}
             placeholder="LLD Introduction + Core Concepts"
             sx={inputSx}
+            required
           />
         </Grid>
         <Grid item xs={12}>
@@ -114,6 +137,52 @@ function SessionForm({ initial, onSave, onCancel, saving }) {
             placeholder="Foundation★ Start Here"
             sx={inputSx}
           />
+        </Grid>
+        <Grid item xs={12} sm={4}>
+          <TextField
+            label="Serial Number"
+            type="number"
+            fullWidth
+            size="small"
+            value={form.serialNumber}
+            onChange={e => setField("serialNumber", e.target.value)}
+            placeholder="Unique serial number"
+            sx={inputSx}
+            required
+          />
+        </Grid>
+        <Grid item xs={12} sm={8}>
+          <TextField
+            label="Question Link"
+            fullWidth
+            size="small"
+            value={form.questionLink}
+            onChange={e => setField("questionLink", e.target.value)}
+            placeholder="https://..."
+            sx={inputSx}
+            required
+          />
+        </Grid>
+        <Grid item xs={12}>
+          <TextField
+            select
+            label="Category"
+            fullWidth
+            size="small"
+            value={form.category}
+            onChange={e => setField("category", e.target.value)}
+            sx={inputSx}
+            required
+          >
+            {categoryOptions.map(option => (
+              <MenuItem key={option.value} value={option.value}>
+                <Box display="flex" alignItems="center" gap={1}>
+                  <Box sx={{ width: 10, height: 10, borderRadius: "50%", bgcolor: option.color }} />
+                  {option.label}
+                </Box>
+              </MenuItem>
+            ))}
+          </TextField>
         </Grid>
       </Grid>
 
@@ -169,8 +238,8 @@ function SessionForm({ initial, onSave, onCancel, saving }) {
 // SESSION ROW
 // ─────────────────────────────────────────────────────────────
 function SessionRow({ session, courseId, onRefresh, setSnack }) {
-  const [editing,  setEditing]  = useState(false);
-  const [saving,   setSaving]   = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
   const handleUpdate = async (form) => {
@@ -180,8 +249,8 @@ function SessionRow({ session, courseId, onRefresh, setSnack }) {
       setSnack("Session updated");
       setEditing(false);
       onRefresh();
-    } catch {
-      setSnack("Failed to update session");
+    } catch (error) {
+      setSnack(error.response?.data?.message || "Failed to update session");
     } finally {
       setSaving(false);
     }
@@ -220,39 +289,71 @@ function SessionRow({ session, courseId, onRefresh, setSnack }) {
           saving={saving}
         />
       ) : (
-        <Box display="flex" alignItems="flex-start" justifyContent="space-between" gap={2}>
-          <Box flex={1}>
-            <Box display="flex" alignItems="center" gap={1} flexWrap="wrap">
-              <Chip
-                label={`Session ${session.sessionNumber}`}
-                size="small"
-                sx={{ bgcolor: S.primary, color: "#fff", fontWeight: 700, fontSize: 11 }}
-              />
-              <Typography fontWeight={700} fontSize={15}>{session.title}</Typography>
-            </Box>
-            {session.subtitle && (
-              <Typography fontSize={13} color={S.muted} mt={0.3}>{session.subtitle}</Typography>
-            )}
-            <Box display="flex" gap={1} mt={1} flexWrap="wrap">
-              {session.resources?.map((r, i) => (
+        <Box>
+          <Box display="flex" alignItems="flex-start" justifyContent="space-between" gap={2}>
+            <Box flex={1}>
+              <Box display="flex" alignItems="center" gap={1} flexWrap="wrap">
                 <Chip
-                  key={i}
-                  label={r.label}
+                  label={`Session ${session.sessionNumber}`}
                   size="small"
-                  component="a"
-                  href={r.url}
-                  target="_blank"
-                  clickable
-                  sx={{ fontSize: 12, bgcolor: "#fff", border: `1px solid ${S.border}` }}
+                  sx={{ bgcolor: S.primary, color: "#fff", fontWeight: 700, fontSize: 11 }}
                 />
-              ))}
+                <Chip
+                  label={`#${session.serialNumber}`}
+                  size="small"
+                  sx={{ bgcolor: "#e0e7ff", color: "#3730a3", fontWeight: 600, fontSize: 11 }}
+                />
+                <Chip
+                  label={session.category}
+                  size="small"
+                  sx={{ 
+                    bgcolor: `${getCategoryColor(session.category)}20`,
+                    color: getCategoryColor(session.category),
+                    fontWeight: 600,
+                    fontSize: 11,
+                    border: `1px solid ${getCategoryColor(session.category)}40`
+                  }}
+                />
+                <Typography fontWeight={700} fontSize={15}>{session.title}</Typography>
+              </Box>
+              {session.subtitle && (
+                <Typography fontSize={13} color={S.muted} mt={0.3}>{session.subtitle}</Typography>
+              )}
+              {session.questionLink && (
+                <Box mt={1}>
+                  <Chip
+                    label="View Question"
+                    size="small"
+                    component="a"
+                    href={session.questionLink}
+                    target="_blank"
+                    clickable
+                    icon={<span>🔗</span>}
+                    sx={{ fontSize: 12, bgcolor: "#fff", border: `1px solid ${S.border}` }}
+                  />
+                </Box>
+              )}
+              <Box display="flex" gap={1} mt={1} flexWrap="wrap">
+                {session.resources?.map((r, i) => (
+                  <Chip
+                    key={i}
+                    label={r.label}
+                    size="small"
+                    component="a"
+                    href={r.url}
+                    target="_blank"
+                    clickable
+                    sx={{ fontSize: 12, bgcolor: "#fff", border: `1px solid ${S.border}` }}
+                  />
+                ))}
+              </Box>
             </Box>
-          </Box>
-          <Box display="flex" gap={1} flexShrink={0}>
-            <Button size="small" sx={btn("ghost")} onClick={() => setEditing(true)}>Edit</Button>
-            <Button size="small" sx={btn("danger")} disabled={deleting} onClick={handleDelete}>
-              {deleting ? <CircularProgress size={14} /> : "Delete"}
-            </Button>
+            <Box display="flex" gap={1} flexShrink={0}>
+              <Button size="small" sx={btn("ghost")} onClick={() => setEditing(true)}>Edit</Button>
+              <Button size="small" sx={btn("danger")} disabled={deleting} onClick={handleDelete}>
+                {deleting ? <CircularProgress size={14} /> : "Delete"}
+              </Button>
+            </Box>
           </Box>
         </Box>
       )}
@@ -289,8 +390,8 @@ function CourseCard({ course, onRefresh, setSnack }) {
       setAddingSession(false);
       refreshSessions();
       onRefresh();
-    } catch {
-      setSnack("Failed to add session");
+    } catch (error) {
+      setSnack(error.response?.data?.message || "Failed to add session");
     } finally {
       setSavingSession(false);
     }
@@ -481,7 +582,6 @@ export default function CourseManager() {
   const fetchCourses = async () => {
     setLoading(true);
     try {
-      // Service returns r.data directly, so res = { courses: [...] }
       const res = await getAllCourses();
       setCourses(res.courses || []);
     } catch {
